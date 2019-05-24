@@ -1,9 +1,9 @@
-VCF statistics - psarema
-For using this tool you will need to be able to run R code and python.
+# VCF statistics - psarema
+##### For using this tool you will need to be able to run R code and python.
 
 
 ## TUTORIAL - PIPELINE
-# STEP1 - Analysis phase 1
+### STEP1 - Analysis phase 1
 The first step for this analysis is to run psaremaPhase1.py.
 Usage: python psaremaPhase1.py [options]
 Options:
@@ -29,7 +29,7 @@ The second file will contain the number of and which populations does have the S
 The third and final file will contain information per sample. This file will inform us on how many insertions/SNPs a sample has and in which population this sample belongs. This file will be used for a further analysis (Step2) and then for visualization
 
 
-#STEP2 - Analysis phase 2
+### STEP2 - Analysis phase 2
 The second step is the easiest one.
 The only file that is needed is one of the files that are already produced by Step1.
 In fact, we need *summaryStats.3.tab.
@@ -40,7 +40,7 @@ $ Rscript psaremaPhase2.R test.summaryStats.3.tab
 And this will produce "test.summaryStats.3.1.tab" file which will be used as input in Step3
 
 
-#STEP3 - Visualization
+### STEP3 - Visualization
 For Step3, we will also need to run Rscript and 1 package: tidyverse.
 As you may have noticied the name of the vcf file, we used in Step1 is this pipeline's ID. All products from Step1 have the name of the vcf file that was used.
 In order to run Step3, we only need one argument and this is this ID and the file "popSUPERpop.tab", in the same directory with "psarema.plots.R" script, which contains information about each population, that was analyzed in this pipeline.  
