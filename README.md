@@ -71,6 +71,9 @@ This toolset was created when we needed to visualize some of our data and also t
 -0.2 
      +a more informative and well-formated README file
      +phased data are also supported
+<br/>
+-0.3 
+     +bug fixed on psarema.plots.R
 </pre>
 ## Contact
 Contact me at skarisg@gmail.com for reporting bugs or anything else! :)

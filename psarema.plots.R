@@ -123,7 +123,7 @@ for (ins in (1:nrow(table1))){
     
     counter=table1[ins,id11]*2 + table1[ins,id01]
     
-    data1[z,1]=table1$INSERTION[ins]
+    data1[z,1]=toString(table1[ins,1])
     data1[z,2]=i
     data1[z,3]=counter
     
