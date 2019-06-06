@@ -64,7 +64,7 @@ This toolset was created when we needed to visualize some of our data and also t
 
 ## VERSION CHANGELOG
 <pre>
--0.1 CURRENT
+-0.1 
      +support files included
      +files added as arguments and not as hardcoded paths
 <br/>
@@ -72,7 +72,7 @@ This toolset was created when we needed to visualize some of our data and also t
      +a more informative and well-formated README file
      +phased data are also supported
 <br/>
--0.3 
+-0.3 CURRENT
      +bug fixed on psarema.plots.R
 </pre>
 ## Contact
