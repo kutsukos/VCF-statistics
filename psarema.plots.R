@@ -3,8 +3,27 @@ library(tidyverse)
 
 args <- commandArgs(trailingOnly=TRUE)
 pID=args[1]
+pID="yourfile"
+# just a little procedure to expand the analysis
+file2open=paste(pID,".summaryStats.3.tab",sep="")
+outname=paste(strsplit(x = file2open,".tab")[[1]],".1.tab",sep = "")
 
+#This program need *summary.3.tab file from psaremaPhase1.py output
+data=read.table(file=file2open,sep="\t",header=T)
 
+write("POP\tINS\tNoOfPeople",file = outname)
+for (i in(1:length(unique(data$POP)))){
+  pop=unique(data$POP)[i]
+  popdata=data[which(data[,3]==pop),]
+  
+  for (z in (0:max(popdata[,2]))){
+    number=nrow(popdata[(which(popdata[,2]==z)),])
+    write(paste(pop,z,number,sep="\t"),file = outname,append=T)
+  }
+}
+#end
+
+#time to visualize
 file1=paste(pID,".summaryStats.1.tab",sep="")
 file2=paste(pID,".summaryStats.2.tab",sep="")
 file3.1=paste(pID,".summaryStats.3.1.tab",sep="")

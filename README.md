@@ -1,79 +1,110 @@
-# VCF statistics - psarema
-###### For using this tool you will need to be able to run R code and python.
+# VCF statistics - psarema 0.4
+[![uses-bash](https://img.shields.io/badge/Uses%20-Bash-blue.svg)](https://www.gnu.org/software/bash/)
+[![Python 2.7](https://img.shields.io/badge/Python-2.7-green.svg)](https://www.python.org/)
+[![R 3.6.0](https://img.shields.io/badge/R-3.6.0-green.svg)](https://www.r-project.org/)
+[![buildwithlove](https://forthebadge.com/images/badges/built-with-love.svg)](https://forthebadge.com)
+
+## Table of contents
+1. [Step 1 - Analysis](#step1)
+2. [Step 2 - Visualization](#step2)
+3. [About VCF statistics](#about)
+4. [Version Changelog](#version)
+5. [Contact](#contact)
 
 
-## TUTORIAL - PIPELINE
-#### STEP1 - Analysis phase 1
-The first step for this analysis is to run psaremaPhase1.py.
+#### Step 1 - Analysis <a name="step1"></a>
+The first step for this analysis is to run <code>psarema.py</code>.
 
-<pre>Usage: python psaremaPhase1.py [options]
+```console
+$ python psarema.py --help
+Usage: python psarema.py [options]
 Options:
   -v FILE, --vcf=FILE  VCF for statistics
-  -p FILE, --pop=FILE  File with information about populations</pre>
-  
-  The vcf file that will used for this analysis should be defined with -v option.<br/>
-The file "1KGP.sample.pop.tab" has the format, that is expected for the second file that we need for this analysis.<br/>
-The file "1KGP.sample.pop.tab" was used for analysis in samples contained in 1000 genome project. So if your vcf file's samples belong to 1000 genome project,
-you will probably use "1KGP.sample.pop.tab" file.<br/>
-Or else try to keep the same format and the output will be ok
-
-In conclusion your command line will like this: <br/>
-``` $ python psaremaPhase1.py -p 1KGP.sample.pop.tab -v yourfile.vcf ```
-
-This command line will produce 3 files.
-If lets say you have a vcf file named as "test.vcf" and you have runned Step1, now you have 3 files:
-1. test.summaryStats.1.tab
-2. test.summaryStats.2.tab
-3. test.summaryStats.3.tab
-
-The first one will contain information about each line. Information about the number of samples that have 0/0, 1/1 or 0/1 in each population. This information will help us later to visualize the information from the vcf file.
-The second file will contain the number of and which populations does have the SNP or whatever a line explains.
-The third and final file will contain information per sample. This file will inform us on how many insertions/SNPs a sample has and in which population this sample belongs. This file will be used for a further analysis (Step2) and then for visualization
+  -p FILE, --pop=FILE  File with information about populations
+```
+This script needs 2 arguments
+1. -v | a file to be analysed in VCF format
+2. -p | a tab-delimited file with some essential information about which samples belong to each population
 
 
-#### STEP2 - Analysis phase 2
-The second step is the easiest one.<br/>
-The only file that is needed is one of the files that are already produced by Step1.<br/>
-In fact, we need *summaryStats.3.tab.<br/>
+This tab-delimited file contains 2 fixed fields per line. All data lines are tab-delimited. Fixed fields are:
+1. sample - an identifier to a sample
+2. population - the population this sample belongs to
 
-For Step2 you will need to run the following command line:<br/>
-``` $ Rscript psaremaPhase2.R test.summaryStats.3.tab ```
+In SupportData directory, you can find <code>1KGP.sample.pop.tab</code> which is a sample file, we are going to use in this tutorial.
 
-And this will produce "test.summaryStats.3.1.tab" file which will be used as input in Step3
+This file is suitable to be used for analysis, in samples contained in 1000 genome project. So if your vcf file's samples belong to 1000 genome project, you will probably use <code>1KGP.sample.pop.tab</code> file.
+Or else try to keep the same format and the output will be ok.
+
+In conclusion, your command line will like this: 
+```console
+$ python psarema.py -p 1KGP.sample.pop.tab -v yourfile.vcf 
+```
+
+If lets say you have a vcf file named as <code>yourfile.vcf</code> and you have executed the command above, now you have 3 files:
+1. yourfile.summaryStats.1.tab
+2. yourfile.summaryStats.2.tab
+3. yourfile.summaryStats.3.tab
+
+The first one contains information about each line of your vcf file. Information about the number of samples that have 0/0, 1/1 or 0/1 in each population. This information will help us later to visualize the information from the vcf file.
+
+The 2nd file contains the number of and which populations does have the SNP or whatever a line explains in your vcf file.
+
+The 3rd  file contains information per sample. This file will inform us on how many insertions/SNPs a sample has and in which population this sample belongs.
+
+As you may have noticed, that the name of the vcf file, we used in this step, is this pipeline's ID. All products start with this ID.
+
+#### Step 2 - Visualization <a name="step2"></a>
+For Step2, we will need  <code>Rscript</code> and <code>tidyverse</code> package. If you dont have it, follow the commands below.
+```console
+$ R
+> install.packages("tidyverse")
+> q()
+Save workspace image? [y/n/c]: n
+```
+
+In order to run this script, we only need one argument and this is the ID of this project and the file <code>popSUPERpop.tab</code>, in the same directory as <code>psarema.plots.R</code> script is.
+
+The file <code>popSUPERpop.tab</code>, that is providen in the <code>SupportData</code> directory has information about the populations from 1000 genome project.
+
+In our example the ID was <code>yourfile</code>, because the vcf file was named <code>yourfile.vcf</code>.
+
+**Does it make sense? __No!__ But we assumed, that was your file's name.**
 
 
-#### STEP3 - Visualization
-For Step3, we will also need to run Rscript and 1 package: tidyverse.<br/>
-As you may have noticied the name of the vcf file, we used in Step1 is this pipeline's ID. All products from Step1 have the name of the vcf file that was used.<br/>
-In order to run Step3, we only need one argument and this is this ID and the file "popSUPERpop.tab", in the same directory with "psarema.plots.R" script, which contains information about each population, that was analyzed in this pipeline.<br/> 
-The file "popSUPERpop.tab", that is providen in this folder has information about the populations from 1000 genome project.
+```console
+$ Rscript psarema.plots.R yourfile 
+```
+The command above, will output 2 pdf files, 5 files (5 super families) with tables, with statistics about each super population and 1 <code>.tab</code> file that contain some extra information, that is needed for the visualization.
 
-In our example the ID was "test", because the vcf file was named "test.vcf"
+The plot1 is showing us in how many populations, a SNP/insertion exists.
 
-So the following command line will run Step3, which will output 2 pdf files and 5 files (5 super families) with tables, with statistics about each super population<br/>
-``` $ Rscript psarema.plots.R test ```
-
-The plot1 is showing us in how many populations, a SNP/insertion exists.<br/>
 The plot2 is showing us, in each population how many samples do have 0,1,2,... insertions/SNPs depending again on the information each line explains in the vcf file and the number of lines.
 
 
-## ABOUT VCF statistics
-This toolset was created when we needed to visualize some of our data and also to make some basic statistical analysis.<br/>
+## ABOUT VCF statistics <a name="about"></a>
+This toolset was created when we needed to visualize some of our data and also to make some basic statistical analysis.
+
 Ψάρεμα-Psarema means fishing (in Greek), and this toolkit was named after this, because we try to fish information out of a vcf file...
 
 
-## VERSION CHANGELOG
+## VERSION CHANGELOG <a name="version"></a>
 <pre>
 -0.1 
-     +support files included
-     +files added as arguments and not as hardcoded paths
-<br/>
+   + Support files included
+   + Files added as arguments and not as hardcoded paths
 -0.2 
-     +a more informative and well-formated README file
-     +phased data are also supported
-<br/>
--0.3 CURRENT
-     +bug fixed on psarema.plots.R
+   + A more informative and well-formated README file
+   + Phased data are also supported
+-0.3
+   + Bug fixed on psarema.plots.R
+-0.4 - CURRENT-
+   + Updated README file
+   + Step 2 and Step 3 are concatenated
+-0.4.2 
+   + One extra pdf file will be created on step 2...
+   + Detailed comments in scripts added
 </pre>
-## Contact
-Contact me at skarisg@gmail.com for reporting bugs or anything else! :)
+
+## Contact <a name="contact"></a>
+Contact me at <code>skarisg@gmail.com</code> or <code>ioannis.kutsukos@gmail.com</code> for reporting bugs or anything else! :)
