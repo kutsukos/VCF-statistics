@@ -2,7 +2,6 @@
 [![uses-bash](https://img.shields.io/badge/Uses%20-Bash-blue.svg)](https://www.gnu.org/software/bash/)
 [![Python 2.7](https://img.shields.io/badge/Python-2.7-green.svg)](https://www.python.org/)
 [![R 3.6.0](https://img.shields.io/badge/R-3.6.0-green.svg)](https://www.r-project.org/)
-[![buildwithlove](https://forthebadge.com/images/badges/built-with-love.svg)](https://forthebadge.com)
 
 ## Table of contents
 1. [Step 1 - Analysis](#step1)
@@ -101,10 +100,9 @@ This toolset was created when we needed to visualize some of our data and also t
 -0.4 - CURRENT-
    + Updated README file
    + Step 2 and Step 3 are concatenated
--0.4.2 
-   + One extra pdf file will be created on step 2...
-   + Detailed comments in scripts added
+-0.5 
+   + Python 3 update for the python script
 </pre>
 
 ## Contact <a name="contact"></a>
-Contact me at <code>skarisg@gmail.com</code> or <code>ioannis.kutsukos@gmail.com</code> for reporting bugs or anything else! :)
+Contact me at <code>ioannis.kutsukos@gmail.com</code> for reporting bugs or anything else! :)
