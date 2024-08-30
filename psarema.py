@@ -1,191 +1,187 @@
-## INPUT 1: A tab delimited file that matches samples with population. It is providen by 1KGP
+## GLOBAL VARIABLES
+
+## INPUT 1: A tab delimited file that matches samples with population
 ## INPUT 2: A vcf file with variants for statistic analysis
+POP_INFO_FILE   = '1KGP.sample.pop.tab'
+VCF_FILE        = 'VCF_SAMPLE.vcf'
+OUTPUT_FILENAME = 'result'
+POPULATION_LIST = []
 
-from optparse import OptionParser
-import sys
-from copy import deepcopy
-
-parser = OptionParser()
-parser.add_option("-v", "--vcf", dest="vcffile",
-                  help="VCF for statistics", metavar="FILE")
-parser.add_option("-p", "--pop", dest="popinfo",
-                  help="File with information about populations", metavar="FILE")
-(options, args) = parser.parse_args()
-
-VCFfile=options.vcffile; POPfile=options.popinfo
-outname=VCFfile.split("vcf")[0]
-
-print("Psarema Statistics by kutsukos\n");
-print("Reading pop file");
+ZEROZERO = "0/0" 
+ZEROONE  = "0/1"
+ONEONE   = "1/1"
 
 
-###READING DB from 1KGP and storing information to samplesDB
-samplesDB={}
-file = open(POPfile, "r")
-for line in file:
-    words = line.split("\t")
-    lineSampleID=words[0]
-    linePopulatioName=words[1][0:3]
+# function to parse population file and store info into a dictionary
+# Dictionary keys are sample names and values are a list with population name and a number,
+# that will be used as a counter. This number will keep the number of insertions in this sample
+# In POPULATION_LIST, we store a list of all populations, for future use
+def parse_population_file():
+    print(f'Parsing Population file')
+    global POPULATION_LIST
+    result  = {}
+    with open(POP_INFO_FILE, "r") as file:
+        for line in file:
+            tokens = line.split("\n")[0].split("\t")
+            sample_id     = tokens[0]
+            population_id = tokens[1]
 
-    #check if population exists
-    if((linePopulatioName in samplesDB) ==True):
-        samplesDB[linePopulatioName].append(lineSampleID)
-    else:
-        samplesDB[linePopulatioName]=[]
-        samplesDB[linePopulatioName].append(lineSampleID)
-file.close()
-print("Reading pop file...DONE!");
-##DONE
+            result[sample_id] = [population_id, 0]
 
+            if population_id not in POPULATION_LIST:
+                POPULATION_LIST.append(population_id)
 
-zerozero="0/0"; zeroone="0/1"; oneone="1/1"
-samples00={}; samples01={}; samples11={}
-insertions=[]
-
-
-### READING VCF file and storing information about each line in 3 dictionaries
-##samples00, samples01, samples11
-file = open(VCFfile, "r")
-print("Reading VCF file");
-for line in file:
-    #lline=line.split("\n")
-    words = line.split("\t")
-    zerozeroCounter = 0;    zerooneCounter = 0;    oneoneCounter = 0;
-    if ("#" not in line):
-
-        lineChr = words[0];        linePos = words[1]
-        insertionID=lineChr+"."+linePos
-        samples00[insertionID]=[]; samples11[insertionID]=[]; samples01[insertionID]=[];
-        insertions.append(insertionID)
-
-        counter = 0
-
-        for item in words:
-            word=item.split(":")[0]
-            if (zerozero in word):
-                samples00[insertionID].append(counter)
-            elif (oneone in word):
-                samples11[insertionID].append(counter)
-            elif (zeroone in word):
-                samples01[insertionID].append(counter)
-            counter = counter + 1;
-    else:
-        if ("##" not in line):
-            headerSplit = line.split("\n")[0].split("\t")
-file.close()
-##DONE
+    POPULATION_LIST.sort()
+    return result
 
 
-print("Reading VCF file...DONE!");
-print("Analysing data and exporting results");
+# two functions to get and change the dictionary holding population info
+# a function that accepts a sample name and returns the population name
+def get_population_from_sample(dictionary_, key_):
+    if key_ in dictionary_:
+        return dictionary_[key_][0]
+    return 0
+
+# and a function that increases the counter number for a specific sample
+def increase_sample_counter(dictionary_, key_):
+    dictionary_[key_][1] += 1
 
 
-outputfile=outname+"summaryStats.1.tab"
-outputfile2=outname+"summaryStats.2.tab"
-outFile = open(outputfile, "w")
-outFile2=open(outputfile2,"w")
+# Function that reads the vcf file and creates a dictionary for each row
+# As value we keep a list that includes counters for the amount of 0/0, 0/1 and 1/1
+# a list of all samples that have info regards to this row and
+# a list of populations that have this row/insertion
+# 
+# This method uses and modifies the dictionary holding population data
+# It uses increase_sample_counter, whenever a sample is characterized with 0/1 or 1/1
+def parse_vcf_file(pop_data):
+    print(f'Parsing VCF file')
+    result = {}
+    file_header = ''
+    with open(VCF_FILE, "r") as file:
+        for line in file:
+            if '##' in line:
+                continue
+            if '#' in line:
+                file_header = line.split('\n')[0].split('\t')
+            else:
+                tokens = line.split('\n')[0].split('\t')
+                chr_number    = tokens[0]
+                pos_number    = tokens[1]
+                insertion_id  = chr_number + '_' + pos_number
+                
+                ins_count_00    = 0
+                ins_count_01    = 0
+                ins_count_11    = 0
+                ins_sample_data = []
 
-##time to write on our first 2 outputfiles
-#the first one will contain information about each line. information about the number 
-# of samples that have 0/0, 1/1 or 0/1 in each population. This information will 
-# help us later to visualize the information from the vcf file
-# The second file will contain the number of and which populations does have the SNP or whatever a line
-# explains.
-header="INSERTION\tNo00\tNo01\tNo11\t"
-for item in samplesDB:
-    header=header + str(item)+".00\t"
-for item in samplesDB:
-    header = header + str(item) + ".01\t"
-for item in samplesDB:
-    header=header + str(item)+".11\t"
-outFile.write( header+"\n")
+                ins_pop_list_01_11 = []
 
-##we use deepcopy as the simple copy does a shallow copy of the first struct.
-# and for this procedure we want to manipulate the copy and keep the original
-# struct untouched
-samplesBD2 = deepcopy(samplesDB)
+                pos_GT = 0
+                for i, token in enumerate(tokens):
+                    if 'GT' in token:
+                        format = token.split(":")
+                        pos_GT = format.index('GT')
+                        continue
 
-outFile2.write("InsertionID\tno of populations\n")
-for item in insertions:
-    line2PRINT= item+ "\t"+str(len(samples00[item]))+ "\t"+str(len(samples01[item]))+"\t" +str(len(samples11[item]))+"\t"
+                    if i < len(file_header):
+                        sample_name = file_header[i]
+                        sample_population = get_population_from_sample(pop_data, sample_name)
+                        values = token.split(':')
+                    
+                        if ZEROZERO in values[pos_GT]:
+                            ins_count_00 += 1
+                        elif ZEROONE in values[pos_GT]:
+                            ins_count_01 += 1
+                        elif ONEONE in values[pos_GT]:
+                            ins_count_11 += 1
+                        else:
+                            pass
 
-    numofPOPs4INS = [];
-
-    for item4 in samplesBD2:
-        samplesBD2[item4] = 0;
-
-    for item2 in samples00[item]:
-        for pop in samplesDB:
-            if (headerSplit[item2] in samplesDB[pop]):
-                # print str(item) +"\t" + str(headerSplit[item]) +"\t" +str(pop)
-                samplesBD2[pop] = samplesBD2[pop] + 1;
-    for item3 in samplesBD2:
-        line2PRINT = line2PRINT + str(samplesBD2[item3]) + "\t"
-
-    for item4 in samplesBD2:
-        samplesBD2[item4] = 0;
-
-    for item2 in samples01[item]:
-        for pop in samplesDB:
-            if (headerSplit[item2] in samplesDB[pop]):
-                if(pop not in numofPOPs4INS):
-                    numofPOPs4INS.append(pop)
-                samplesBD2[pop] = samplesBD2[pop] + 1;
-    for item3 in samplesBD2:
-        line2PRINT = line2PRINT + str(samplesBD2[item3]) + "\t"
-
-    for item4 in samplesBD2:
-        samplesBD2[item4] = 0;
-
-    for item2 in samples11[item]:
-        for pop in samplesDB:
-            if (headerSplit[item2] in samplesDB[pop]):
-                if (pop not in numofPOPs4INS):
-                    numofPOPs4INS.append(pop)
-                samplesBD2[pop] = samplesBD2[pop] + 1;
-    for item3 in samplesBD2:
-        line2PRINT = line2PRINT + str(samplesBD2[item3]) + "\t"
-
-    outFile.write(line2PRINT+"\n")
-
-    outFile2.write(str(item) +"\t"+ str(len(numofPOPs4INS)))
-    for num in numofPOPs4INS:
-        outFile2.write("\t"+str(num))
-
-    outFile2.write("\n")
-outFile.close()
-outFile2.close()
-##DONE
+                        ins_sample_data.append((sample_name, values[pos_GT], sample_population))
+                        if ZEROONE in values[pos_GT] or ONEONE in values[pos_GT]:
+                            increase_sample_counter(pop_data, sample_name)
+                            if sample_population not in ins_pop_list_01_11:
+                                ins_pop_list_01_11.append(sample_population)
+                ins_pop_list_01_11.sort()
+                result[insertion_id] = (ins_count_00, ins_count_01, ins_count_11, ins_sample_data, ins_pop_list_01_11)
+    return result
 
 
-##Now lets do some population statistics
-# The third and final file will contain information per sample.
-# More on this, this file will inform us on how many insertions/SNPs a sample
-# has and in which population this sample belongs
-# This file will be used for a further analysis and then for visualizing
-outputfile3=outname+"summaryStats.3.tab"
-outFile3 = open(outputfile3, "w")
+# The function that uses the dictionary created from parse_vcf_file
+# and creates 2 files with some statistics
+# The first output file will contain information about each line on the vcf file.
+#   Number of 0/0, 0/1 and 1/1 in total and per population
+# The second outout file will contain insights on how many and which populations
+#   have insertions of each row on vcf file
+def analysis_1(vcf_data):
+    print(f'Starting Analysis 1')
+    outputfile  = OUTPUT_FILENAME + ".1.tab"
+    outputfile2 = OUTPUT_FILENAME + ".2.tab"
+    with open(outputfile, "w") as file, open(outputfile2, "w") as file2:
+        # header of the files
+        file.write(f'insertion\tno_00\tno_01\tno_11')
+        for population in POPULATION_LIST:
+            file.write(f"\t{population}.00")
+        for population in POPULATION_LIST:
+            file.write(f"\t{population}.01")
+        for population in POPULATION_LIST:
+            file.write(f"\t{population}.11")
+        file.write(f'\n')
+        file2.write(f'insertion\tno_of_populations\tpopulations\n')
 
-#make a dictionary with the same ids but counter as values
-counters={}
-for item in samplesDB:
-    for sample in samplesDB[item]:
-        counters[sample]=0;
+        # main data
+        for key, value in vcf_data.items():
+            (ins_count_00, ins_count_01, ins_count_11, ins_sample_data, ins_pop_list_01_11) =  value
+            file.write(f'{key}\t{ins_count_00}\t{ins_count_01}\t{ins_count_11}')
+
+            list_of_populations     = "\t".join(ins_pop_list_01_11)
+            len_list_of_populations = len(ins_pop_list_01_11)
+            file2.write(f'{key}\t{len_list_of_populations}\t{list_of_populations}\n')
+
+            per_population_counter00 = ''
+            per_population_counter01 = ''
+            per_population_counter11 = ''
+            for population in POPULATION_LIST:
+                all00 = len(list(filter(lambda data: data[2] == population and data[1] == ZEROZERO, ins_sample_data)))
+                all01 = len(list(filter(lambda data: data[2] == population and data[1] == ZEROONE, ins_sample_data)))
+                all11 = len(list(filter(lambda data: data[2] == population and data[1] == ONEONE, ins_sample_data)))
+                per_population_counter00 += f'\t{all00}'
+                per_population_counter01 += f'\t{all01}'
+                per_population_counter11 += f'\t{all11}'
+            
+            file.write(f'{per_population_counter00}{per_population_counter01}{per_population_counter11}\n')
 
 
-#parse input file and count people
-##
-outFile3.write("SampleID\tInsertions\tPOP\n")
-for INS in insertions:
-    for lineSampleID in samples11[INS]:
-        counters[headerSplit[lineSampleID]] = counters[headerSplit[lineSampleID]]+1
-    for lineSampleID in samples01[INS]:
-        counters[headerSplit[lineSampleID]] = counters[headerSplit[lineSampleID]] + 1
+# The function that uses the dictionary created from parse_population_file
+# and creates a file that contains insertions/SNPs per sample.
+def analysis_2(pop_data):
+    print(f'Starting Analysis 2')
+    outputfile = OUTPUT_FILENAME + ".3.tab"
+    with open(outputfile, "w") as file:
+        # header of the file
+        file.write(f"sample_name\tnumber_of_insertions\tpopulation\n")
+        # main data
+        for item in pop_data:
+            insertions_per_sample = pop_data[item][1]
+            sample_population     = pop_data[item][0]
+            file.write(f"{item}\t{insertions_per_sample}\t{sample_population}\n")
 
-for pop in samplesDB:
-    for sample in samplesDB[pop]:
-        outFile3.write(sample + "\t" + str(counters[sample]) + "\t" + pop +"\n")
 
-outFile3.close()
-##DONE
-print ("Analysing data and exporting results...DONE!")
+
+if __name__ == "__main__":
+    print(f'Psarema: Started')
+
+    # Lets parse the population file
+    pop_data = parse_population_file()
+
+    # Lets parse VCF file
+    vcfDB = parse_vcf_file(pop_data)
+
+    # first analysis
+    analysis_1(vcfDB)
+
+    # second analysis
+    analysis_2(pop_data)
+    
+    print(f'Psarema: Completed')
